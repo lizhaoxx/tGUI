@@ -15,29 +15,29 @@
 #define TGUI_TERMINAL_WRITE_BYTE
 #define TGUI_TERMINAL_READ_BYTE
 
-// 写数据插入宏
+// termianal write byte
 #ifndef TGUI_TERMINAL_WRITE_BYTE
-	#error No defined TGUI_TERMINAL_WRITE_BYTE
+#   error No defined TGUI_TERMINAL_WRITE_BYTE
 #endif
 
-// 读取数据插入宏
+// termianal read byte
 #ifndef TGUI_TERMINAL_READ_BYTE
-    #error No defined TGUI_TERMINAL_READ_BYTE
+#   error No defined TGUI_TERMINAL_READ_BYTE
 #endif
 
 /*============================ MACROFIED FUNCTIONS ===========================*/
 
 /*============================ TYPES =========================================*/
 
-// 字符串发送数据结构
+//! stream output control block
 typedef struct {
     enum {
-        TERMINAL_PRN_STR_START = 0,
-        TERMINAL_PRN_STR_CHECK,
-        TERMINAL_PRN_STR_SEND
-    } tState;                   // 状态变量
-    uint8_t *pchStr;            // 待发送字符首地址
-    uint_fast16_t hwSize;       // 待发送字符个数
+        TERMINAL_PRN_STR_START = 0,     //!< stream output start status
+        TERMINAL_PRN_STR_CHECK,         //!< stream output cheak status
+        TERMINAL_PRN_STR_SEND           //!< stream output send status
+    } tState;                           //!< stream output status
+    uint8_t *pchStr;                    //!< stream buffer address
+    uint_fast16_t hwSize;               //!< stream buffer size
 } terminal_prn_str_t;
 
 /*============================ GLOBAL VARIABLES ==============================*/
@@ -165,7 +165,7 @@ fsm_rt_t terminal_get_grid(grid_t *ptGrid)
                 s_chReceiveCnt++;
                 if ( 'R' == chTemp ) {
                     
-                    // 未完成
+                    // TBD
                 }
             }
             break;
@@ -248,6 +248,7 @@ fsm_rt_t terminal_resume(void)
             terminal_init_prn_str(&s_tPrn, s_chResumeCode, 3);
             s_tState = TERMINAL_RESUME_SEND;
             break;
+
         case TERMINAL_RESUME_SEND:
             tfsm = terminal_prn_str(&s_tPrn);
             if ( IS_FSM_ERR(tfsm) ) {
@@ -298,6 +299,7 @@ fsm_rt_t terminal_set_brush(grid_brush_t tBrush)
 			s_chCmdCode[7] = 'm';
 			terminal_init_prn_str(&s_tPrn, s_chCmdCode, 8);
 			break;
+
 		case TERMINAL_SET_BRUSH_SEND:
 			tfsm = terminal_prn_str(&s_tPrn);
 			if ( IS_FSM_ERR(tfsm) ) {
@@ -353,11 +355,12 @@ static fsm_rt_t terminal_prn_str(terminal_prn_str_t *ptPRN)
     switch( ptPRN->tState ) {
         case TERMINAL_PRN_STR_START:
             if( ( NULL == ptPRN->pchStr ) || ( 0 == ptPRN->hwSize ) ) {
-				return fsm_rt_err;              // 参数错误
+				return fsm_rt_err;              // parameter error
             } else {
                 ptPRN->tState = TERMINAL_PRN_STR_SEND;
             }
             break;
+
         case TERMINAL_PRN_STR_SEND:
             if( TGUI_TERMINAL_WRITE_BYTE(*(ptPRN->pchStr)) ) {
                 ptPRN->pchStr++;
@@ -365,6 +368,7 @@ static fsm_rt_t terminal_prn_str(terminal_prn_str_t *ptPRN)
                 ptPRN->tState = TERMINAL_PRN_STR_CHECK;
             }
             break;
+
 		case TERMINAL_PRN_STR_CHECK:
 			if ( 0 == ptPRN->hwSize ) {
 				TERMINAL_PRN_STR_RESET();
@@ -381,7 +385,9 @@ static fsm_rt_t terminal_prn_str(terminal_prn_str_t *ptPRN)
  *  \retval false initialize stream output failed
  *  \retval true initialize stream output succeeded
  */
-static bool terminal_init_prn_str(terminal_prn_str_t *ptPRN, uint8_t *pchStr, uint_fast16_t hwSize)
+static bool terminal_init_prn_str(  terminal_prn_str_t *ptPRN, 
+                                    uint8_t *pchStr, 
+                                    uint_fast16_t hwSize)
 {
     if ( (NULL == ptPRN) || (NULL == pchStr) ) {
         return false;
