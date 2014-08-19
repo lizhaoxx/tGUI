@@ -4,7 +4,7 @@
 #include ".\app_cfg.h"
 
 #if USE_SERVICE_GUI_TGUI == ENABLED
-#include "..\grid\interface.h"
+#include "..\interface.h"
 
 /*============================ MACROS ========================================*/
 #define TGUI_TERMINAL_CLEAR_CODE	    (0x0C)
