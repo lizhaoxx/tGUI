@@ -8,6 +8,7 @@
 
 /*============================ MACROS ========================================*/
 #define TGUI_TERMINAL_CLEAR_CODE	    (0x0C)
+#define ASCII_ESC                       (0x1B)
 
 #define WIDTH                           (80)
 #define HEIGHT                          (24)
@@ -78,7 +79,7 @@ fsm_rt_t terminal_set_grid(grid_t tGrid)
         case TERMINAL_SET_GRID_START:
             chRow = HEIGHT - tGrid.chTop;
             chColumn = WIDTH - tGrid.chLeft;
-            s_chSetCode[0] = 0x1B;
+            s_chSetCode[0] = ASCII_ESC;
             s_chSetCode[1] = '[';
             s_chSetCode[2] = ( chRow / 10 ) + '0';
             s_chSetCode[3] = ( chRow % 10 ) + '0';
@@ -137,7 +138,7 @@ fsm_rt_t terminal_get_grid(grid_t *ptGrid)
     
     switch ( s_tState ) {
         case TERMINAL_GET_GRID_START:
-            s_chCmdCode[0] = 0x1B;
+            s_chCmdCode[0] = ASCII_ESC;
             s_chCmdCode[1] = '[';
             s_chCmdCode[2] = '6';
             s_chCmdCode[3] = 'n';
@@ -225,7 +226,7 @@ fsm_rt_t terminal_save_current(void)
     
     switch ( s_tState ) {
         case TERMINAL_SAVE_CURRENT_START:
-            s_chSaveCode[0] = 0x1B;
+            s_chSaveCode[0] = ASCII_ESC;
             s_chSaveCode[1] = '[';
             s_chSaveCode[2] = 's';
             terminal_init_prn_str(&s_tPrn, s_chSaveCode, 3);
@@ -269,7 +270,7 @@ fsm_rt_t terminal_resume(void)
     
     switch ( s_tState ) {
         case TERMINAL_RESUME_START:
-            s_chResumeCode[0] = 0x1B;
+            s_chResumeCode[0] = ASCII_ESC;
             s_chResumeCode[1] = '[';
             s_chResumeCode[2] = 'u';
             terminal_init_prn_str(&s_tPrn, s_chResumeCode, 3);
@@ -315,7 +316,7 @@ fsm_rt_t terminal_set_brush(grid_brush_t tBrush)
 			if ( ( tBrush.tForeground.tValue > 7 ) || ( tBrush.tBackground.tValue > 7 ) ) {
 				return fsm_rt_err;
 			}
-			s_chCmdCode[0] = 0x1B;
+			s_chCmdCode[0] = ASCII_ESC;
 			s_chCmdCode[1] = '[';
 			s_chCmdCode[2] = '3';
 			s_chCmdCode[3] = tBrush.tForeground.tValue + '0';
