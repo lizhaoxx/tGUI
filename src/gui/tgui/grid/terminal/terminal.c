@@ -80,11 +80,11 @@ fsm_rt_t terminal_set_grid(grid_t tGrid)
             chColumn = WIDTH - tGrid.chLeft;
             s_chSetCode[0] = 0x1B;
             s_chSetCode[1] = '[';
-            s_chSetCode[2] = ( chRow / 10 ) + 0x30;
-            s_chSetCode[3] = ( chRow % 10 ) + 0x30;
+            s_chSetCode[2] = ( chRow / 10 ) + '0';
+            s_chSetCode[3] = ( chRow % 10 ) + '0';
             s_chSetCode[4] = ';';
-            s_chSetCode[5] = ( chColumn / 10 ) + 0x30;
-            s_chSetCode[6] = ( chColumn % 10 ) + 0x30;
+            s_chSetCode[5] = ( chColumn / 10 ) + '0';
+            s_chSetCode[6] = ( chColumn % 10 ) + '0';
             s_chSetCode[7] = 'H';
             terminal_init_prn_str(&s_tPrn, s_chSetCode, 8);
             s_tState = TERMINAL_SET_GRID_SEND;
@@ -170,23 +170,23 @@ fsm_rt_t terminal_get_grid(grid_t *ptGrid)
             break;
         case TERMINAL_GET_GRID_CHECK:
             if ( ';' == s_chReceiveCode[3] ) {
-                s_chRow = s_chReceiveCode[2] - 0x30;
+                s_chRow = s_chReceiveCode[2] - '0';
                 if ( 'R' == s_chReceiveCode[5] ) {
-                    s_chColumn = s_chReceiveCode[4] - 0x30;
+                    s_chColumn = s_chReceiveCode[4] - '0';
                 } else if ( 'R' == s_chReceiveCode[6] ) {
-                    s_chColumn = ( s_chReceiveCode[4] - 0x30 ) * 10;
-                    s_chColumn += ( s_chReceiveCode[5] - 0x30 );
+                    s_chColumn = ( s_chReceiveCode[4] - '0' ) * 10;
+                    s_chColumn += ( s_chReceiveCode[5] - '0' );
                 } else {
                     return fsm_rt_err;
                 }
             } else if ( ';' == s_chReceiveCode[4] ) {
-                s_chRow = ( s_chReceiveCode[2] - 0x30 ) * 10;
-                s_chRow += ( s_chReceiveCode[3] - 0x30 );
+                s_chRow = ( s_chReceiveCode[2] - '0' ) * 10;
+                s_chRow += ( s_chReceiveCode[3] - '0' );
                 if ( 'R' == s_chReceiveCode[6] ) {
-                    s_chColumn = s_chReceiveCode[5] - 0x30;
+                    s_chColumn = s_chReceiveCode[5] - '0';
                 } else if ( 'R' == s_chReceiveCode[7] ) {
-                    s_chColumn = ( s_chReceiveCode[5] - 0x30 ) * 10;
-                    s_chColumn += ( s_chReceiveCode[6] - 0x30 );
+                    s_chColumn = ( s_chReceiveCode[5] - '0' ) * 10;
+                    s_chColumn += ( s_chReceiveCode[6] - '0' );
                 } else {
                     return fsm_rt_err;
                 }
@@ -318,10 +318,10 @@ fsm_rt_t terminal_set_brush(grid_brush_t tBrush)
 			s_chCmdCode[0] = 0x1B;
 			s_chCmdCode[1] = '[';
 			s_chCmdCode[2] = '3';
-			s_chCmdCode[3] = tBrush.tForeground.tValue + 0x30;
+			s_chCmdCode[3] = tBrush.tForeground.tValue + '0';
 			s_chCmdCode[4] = ';';
 			s_chCmdCode[5] = '4';
-			s_chCmdCode[6] = tBrush.tBackground.tValue + 0x30;
+			s_chCmdCode[6] = tBrush.tBackground.tValue + '0';
 			s_chCmdCode[7] = 'm';
 			terminal_init_prn_str(&s_tPrn, s_chCmdCode, 8);
 			break;
