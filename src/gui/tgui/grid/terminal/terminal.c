@@ -87,7 +87,7 @@ fsm_rt_t terminal_set_grid(grid_t tGrid)
             s_chSetCode[5] = ( chColumn / 10 ) + '0';
             s_chSetCode[6] = ( chColumn % 10 ) + '0';
             s_chSetCode[7] = 'H';
-            terminal_init_prn_str(&s_tPrn, s_chSetCode, 8);
+            terminal_init_prn_str(&s_tPrn, s_chSetCode, UBOUND(s_chSetCode));
             s_tState = TERMINAL_SET_GRID_SEND;
             // break;
 
@@ -142,7 +142,7 @@ fsm_rt_t terminal_get_grid(grid_t *ptGrid)
             s_chCmdCode[1] = '[';
             s_chCmdCode[2] = '6';
             s_chCmdCode[3] = 'n';
-            terminal_init_prn_str(&s_tPrn, s_chCmdCode, 4);
+            terminal_init_prn_str(&s_tPrn, s_chCmdCode, UBOUND(s_chCmdCode));
             s_tState = TERMINAL_GET_GRID_SEND;
             // break;
 
@@ -229,7 +229,7 @@ fsm_rt_t terminal_save_current(void)
             s_chSaveCode[0] = ASCII_ESC;
             s_chSaveCode[1] = '[';
             s_chSaveCode[2] = 's';
-            terminal_init_prn_str(&s_tPrn, s_chSaveCode, 3);
+            terminal_init_prn_str(&s_tPrn, s_chSaveCode, UBOUND(s_chSaveCode));
             s_tState = TERMINAL_SAVE_CURRENT_SEND;
             // break;
 
@@ -273,7 +273,7 @@ fsm_rt_t terminal_resume(void)
             s_chResumeCode[0] = ASCII_ESC;
             s_chResumeCode[1] = '[';
             s_chResumeCode[2] = 'u';
-            terminal_init_prn_str(&s_tPrn, s_chResumeCode, 3);
+            terminal_init_prn_str(&s_tPrn, s_chResumeCode, UBOUND(s_chResumeCode));
             s_tState = TERMINAL_RESUME_SEND;
             break;
 
@@ -324,7 +324,7 @@ fsm_rt_t terminal_set_brush(grid_brush_t tBrush)
 			s_chCmdCode[5] = '4';
 			s_chCmdCode[6] = tBrush.tBackground.tValue + '0';
 			s_chCmdCode[7] = 'm';
-			terminal_init_prn_str(&s_tPrn, s_chCmdCode, 8);
+			terminal_init_prn_str(&s_tPrn, s_chCmdCode, UBOUND(s_chCmdCode));
 			break;
 		case TERMINAL_SET_BRUSH_SEND:
 			tfsm = terminal_prn_str(&s_tPrn);
