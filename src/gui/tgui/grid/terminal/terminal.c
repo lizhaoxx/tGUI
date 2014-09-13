@@ -120,7 +120,7 @@ static uint8_t s_chExchange[8] = {
 };
 
 //! terminal lock status
-static em_ter_status_t s_tStatus = TER_READY_IDLE;
+static em_ter_status_t s_tCurrentStatus = TER_READY_IDLE;
 
 /*============================ IMPLEMENTATION ================================*/
 
@@ -257,7 +257,6 @@ static fsm_rt_t terminal_get_grid(grid_t *ptGrid)
     
     NO_INIT static uint8_t s_chReceiveCode[8];
     NO_INIT static uint8_t s_chReceiveCnt;
-    NO_INIT static uint8_t s_chRow, s_chColumn;
 
 	if ( NULL == ptGrid ) {
 		return fsm_rt_err;
@@ -265,6 +264,16 @@ static fsm_rt_t terminal_get_grid(grid_t *ptGrid)
     
     switch ( s_tState ) {
         case TERMINAL_GET_GRID_START:
+            SAFE_ATOM_CODE(
+                //! whether system is initialized
+                if (TER_READY_BUSY == s_tCurrentStatus) {
+                    EXIT_SAFE_ATOM_CODE();
+                    return fsm_rt_on_going;
+                }
+                //! set current state
+                s_tCurrentStatus = TER_READY_BUSY;
+            )
+
             s_chExchange[2] = '6';
             s_chExchange[3] = 'n';
             s_tState = TERMINAL_GET_GRID_SEND;
@@ -345,12 +354,25 @@ static fsm_rt_t terminal_save_current(void)
     
     switch ( s_tState ) {
         case TERMINAL_SAVE_CURRENT_START:
+            SAFE_ATOM_CODE(
+                //! whether system is initialized
+                if (TER_READY_BUSY == s_tCurrentStatus) {
+                    EXIT_SAFE_ATOM_CODE();
+                    return fsm_rt_on_going;
+                }
+                //! set current state
+                s_tCurrentStatus = TER_READY_BUSY;
+            )
             s_chExchange[2] = 's';
             s_tState = TERMINAL_SAVE_CURRENT_SEND;
             // break;
 
         case TERMINAL_SAVE_CURRENT_SEND:
             if (fsm_rt_cpl == fsm_ter_stream_exchange(s_chExchange, 3)) {
+                SAFE_ATOM_CODE(
+                    //! set idle state
+                    s_tCurrentStatus = TER_READY_IDLE;
+                )
                 TERMINAL_SAVE_CURRENT_RESET();
                 return fsm_rt_cpl;
             }
@@ -380,12 +402,25 @@ static fsm_rt_t terminal_resume(void)
 
     switch ( s_tState ) {
         case TERMINAL_RESUME_START:
+            SAFE_ATOM_CODE(
+                //! whether system is initialized
+                if (TER_READY_BUSY == s_tCurrentStatus) {
+                    EXIT_SAFE_ATOM_CODE();
+                    return fsm_rt_on_going;
+                }
+                //! set current state
+                s_tCurrentStatus = TER_READY_BUSY;
+            )
             s_chExchange[2] = 'u';
             s_tState = TERMINAL_RESUME_SEND;
             break;
 
         case TERMINAL_RESUME_SEND:
             if (fsm_rt_cpl == fsm_ter_stream_exchange(s_chExchange, 3)) {
+                SAFE_ATOM_CODE(
+                    //! set idle state
+                    s_tCurrentStatus = TER_READY_IDLE;
+                )
                 TERMINAL_RESUME_RESET();
                 return fsm_rt_cpl;
             }
@@ -417,6 +452,15 @@ static fsm_rt_t terminal_set_brush(grid_brush_t tBrush)
 			if ( ( tBrush.tForeground.tValue > 7 ) || ( tBrush.tBackground.tValue > 7 ) ) {
 				return fsm_rt_err;
 			}
+            SAFE_ATOM_CODE(
+                //! whether system is initialized
+                if (TER_READY_BUSY == s_tCurrentStatus) {
+                    EXIT_SAFE_ATOM_CODE();
+                    return fsm_rt_on_going;
+                }
+                //! set current state
+                s_tCurrentStatus = TER_READY_BUSY;
+            )
 			s_chExchange[2] = '3';
 			s_chExchange[3] = tBrush.tForeground.tValue + '0';
 			s_chExchange[4] = ';';
@@ -426,7 +470,11 @@ static fsm_rt_t terminal_set_brush(grid_brush_t tBrush)
 			break;
 
 		case TERMINAL_SET_BRUSH_SEND:
-			if (fsm_rt_cpl == fsm_ter_stream_exchange(s_chExchange, 3)) {
+			if (fsm_rt_cpl == fsm_ter_stream_exchange(s_chExchange, 8)) {
+                SAFE_ATOM_CODE(
+                    //! set idle state
+                    s_tCurrentStatus = TER_READY_IDLE;
+                )
 				TERMINAL_SET_BRUSH_RESET();
 				return fsm_rt_cpl;
 			}
@@ -452,9 +500,36 @@ static grid_brush_t terminal_get_brush(void)
  */
 static fsm_rt_t terminal_clear(void)
 {
-	if ( TGUI_TERMINAL_WRITE_BYTE(TGUI_TERMINAL_CLEAR_CODE) ) {
-		return fsm_rt_cpl;
-	}
+	static enum {
+		TERMINAL_START = 0,
+		TERMINAL_CLEAR
+	} s_tState = TERMINAL_START;
+
+    switch (s_tState) {
+		case TERMINAL_START:
+            SAFE_ATOM_CODE(
+                //! whether system is initialized
+                if (TER_READY_BUSY == s_tCurrentStatus) {
+                    EXIT_SAFE_ATOM_CODE();
+                    return fsm_rt_on_going;
+                }
+                //! set current state
+                s_tCurrentStatus = TER_READY_BUSY;
+            )
+            s_tState = TERMINAL_CLEAR;
+            //break;
+
+        case TERMINAL_CLEAR:
+            if ( TGUI_TERMINAL_WRITE_BYTE(TGUI_TERMINAL_CLEAR_CODE) ) {
+                SAFE_ATOM_CODE(
+                    //! set idle state
+                    s_tCurrentStatus = TER_READY_IDLE;
+                )
+                return fsm_rt_cpl;
+            }
+            break;
+    }
+
 	return fsm_rt_on_going;
 }
 
@@ -465,7 +540,38 @@ static fsm_rt_t terminal_clear(void)
  */
 static fsm_rt_t terminal_print(uint8_t *pchString, uint_fast16_t hwSize)
 {
-    return fsm_ter_stream_exchange(pchString, hwSize);
+	static enum {
+		TERMINAL_START = 0,
+		TERMINAL_PRINT,
+	} s_tState = TERMINAL_START;
+
+    switch (s_tState) {
+		case TERMINAL_START:
+            SAFE_ATOM_CODE(
+                //! whether system is initialized
+                if (TER_READY_BUSY == s_tCurrentStatus) {
+                    EXIT_SAFE_ATOM_CODE();
+                    return fsm_rt_on_going;
+                }
+                //! set current state
+                s_tCurrentStatus = TER_READY_BUSY;
+            )
+            s_tState = TERMINAL_PRINT;
+            //break;
+
+        case TERMINAL_PRINT:
+            if (fsm_rt_cpl == fsm_ter_stream_exchange(pchString, hwSize)) {
+                SAFE_ATOM_CODE(
+                    //! set idle state
+                    s_tCurrentStatus = TER_READY_IDLE;
+                )
+                return fsm_rt_cpl;
+            }
+            break;
+    }
+
+	return fsm_rt_on_going;
+
 }
 
 #endif  /* USE_SERVICE_GUI_TGUI == ENABLED */
