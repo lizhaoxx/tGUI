@@ -11,7 +11,7 @@
 #define ASCII_ESC                       (0x1B)
 
 #define WIDTH                           (80)
-#define HEIGHT                          (24)
+#define HEIGHT                          (23)
 
 // termianal write byte
 #ifndef TGUI_TERMINAL_WRITE_BYTE
@@ -25,6 +25,14 @@
 
 /*============================ MACROFIED FUNCTIONS ===========================*/
 /*============================ TYPES =========================================*/
+//! \name terminal status
+//! @{
+typedef enum {
+    TER_READY_IDLE      = 0,            //!< terminal is idle    
+    TER_READY_BUSY      = 1,            //!< terminal is busy
+} em_ter_status_t;
+//! @}
+
 /*============================ PROTOTYPES ====================================*/
 /*! \brief set current cursor position
  *! \param tGrid cursor position
@@ -74,6 +82,13 @@ static grid_brush_t terminal_get_brush(void);
  */
 static fsm_rt_t terminal_clear(void);
 
+/*! \brief terminal print
+ *! \param none
+ *! \retval fsm_rt_on_going terminal print on going
+ *! \retval fsm_rt_cpl terminal print finish
+ */
+static fsm_rt_t terminal_print(uint8_t *pchString, uint_fast16_t hwSize);
+
 /*============================ GLOBAL VARIABLES ==============================*/
 //! \brief terminal object
 const i_gdc_t terminal = {
@@ -92,7 +107,7 @@ const i_gdc_t terminal = {
         .Get = terminal_get_brush,
     },
     .Clear = terminal_clear,
-    .Print = NULL,
+    .Print = terminal_print,
 };
 
 /*============================ LOCAL VARIABLES ===============================*/
@@ -103,6 +118,9 @@ static grid_brush_t s_tCurrentGridBrush;
 static uint8_t s_chExchange[8] = {
     ASCII_ESC, '[',
 };
+
+//! terminal lock status
+static em_ter_status_t s_tStatus = TER_READY_IDLE;
 
 /*============================ IMPLEMENTATION ================================*/
 
@@ -176,22 +194,39 @@ static fsm_rt_t terminal_set_grid(grid_t tGrid)
     } s_tState = TERMINAL_SET_GRID_START;
     
     switch ( s_tState ) {
-        case TERMINAL_SET_GRID_START: {
+        case TERMINAL_SET_GRID_START:
+
+            SAFE_ATOM_CODE(
+                //! whether system is initialized
+                if (TER_READY_BUSY == s_tStatus) {
+                    EXIT_SAFE_ATOM_CODE();
+                    return fsm_rt_on_going;
+                }
+                //! set current state
+                s_tStatus = TER_READY_BUSY;
+            )
+
+            do {
                 uint8_t chRow = HEIGHT - tGrid.chTop;
-                uint8_t chColumn = WIDTH - tGrid.chLeft;
+                uint8_t chColumn = tGrid.chLeft;
 
                 s_chExchange[2] = ( chRow / 10 ) + '0';
                 s_chExchange[3] = ( chRow % 10 ) + '0';
                 s_chExchange[4] = ';';
                 s_chExchange[5] = ( chColumn / 10 ) + '0';
-                s_chExchange[6] = ( chColumn % 10 ) + '0';
+                s_chExchange[6] = ( chColumn % 10 ) + '1';
                 s_chExchange[7] = 'H';
-                s_tState = TERMINAL_SET_GRID_SEND;
-            }
+            } while (false);
+
+            s_tState = TERMINAL_SET_GRID_SEND;
             // break;
 
         case TERMINAL_SET_GRID_SEND:
             if (fsm_rt_cpl == fsm_ter_stream_exchange(s_chExchange, 8)) {
+                SAFE_ATOM_CODE(
+                    //! set idle state
+                    s_tStatus = TER_READY_IDLE;
+                )
                 TERMINAL_SET_GRID_RESET();
                 return fsm_rt_cpl;
             }
@@ -421,6 +456,16 @@ static fsm_rt_t terminal_clear(void)
 		return fsm_rt_cpl;
 	}
 	return fsm_rt_on_going;
+}
+
+/*! \brief terminal print
+ *! \param none
+ *! \retval fsm_rt_on_going terminal print on going
+ *! \retval fsm_rt_cpl terminal print finish
+ */
+static fsm_rt_t terminal_print(uint8_t *pchString, uint_fast16_t hwSize)
+{
+    return fsm_ter_stream_exchange(pchString, hwSize);
 }
 
 #endif  /* USE_SERVICE_GUI_TGUI == ENABLED */
