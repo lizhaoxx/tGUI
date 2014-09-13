@@ -16,6 +16,9 @@
 /*============================ LOCAL VARIABLES ===============================*/
 /*============================ PROTOTYPES ====================================*/
 
+//! terminal interface
+extern const i_gdc_t terminal;
+
 #endif  /* USE_SERVICE_GUI_TGUI == ENABLED */
 
 #endif  /* __TERMINAL_H__ */

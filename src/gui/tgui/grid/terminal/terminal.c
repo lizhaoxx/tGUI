@@ -24,9 +24,77 @@
 #endif
 
 /*============================ MACROFIED FUNCTIONS ===========================*/
-
 /*============================ TYPES =========================================*/
+/*============================ PROTOTYPES ====================================*/
+/*! \brief set current cursor position
+ *! \param tGrid cursor position
+ *! \retval fsm_rt_on_going set grid on going
+ *! \retval fsm_rt_cpl set grid finish
+ */
+static fsm_rt_t terminal_set_grid(grid_t tGrid);
+
+/*! \brief get current cursor position
+ *! \param tGrid cursor position
+ *! \retval fsm_rt_on_going set grid finish
+ *! \retval fsm_rt_cpl set grid on going
+ */
+static fsm_rt_t terminal_get_grid(grid_t *ptGrid);
+
+/*! \brief save current cursor position
+ *! \param none
+ *! \retval fsm_rt_on_going save grid on going
+ *! \retval fsm_rt_cpl save grid on finish
+ */
+static fsm_rt_t terminal_save_current(void);
+
+/*! \brief resume current cursor position
+ *! \param none
+ *! \retval fsm_rt_on_going set grid on going
+ *! \retval fsm_rt_cpl resume grid complete
+ */
+static fsm_rt_t terminal_resume(void);
+
+/*! \brief set display attribute
+ *! \param tBrush display attribute
+ *! \retval fsm_rt_on_going set brush on going
+ *! \retval fsm_rt_cpl set brush finish
+ */
+static fsm_rt_t terminal_set_brush(grid_brush_t tBrush);
+
+/*! \brief get display attribute
+ *! \param none
+ *! \return display attribute
+ */
+static grid_brush_t terminal_get_brush(void);
+
+/*! \brief terminal clear
+ *! \param none
+ *! \retval fsm_rt_on_going terminal clear on going
+ *! \retval fsm_rt_cpl terminal clear finish
+ */
+static fsm_rt_t terminal_clear(void);
+
 /*============================ GLOBAL VARIABLES ==============================*/
+//! \brief terminal object
+const i_gdc_t terminal = {
+    .Info = {
+        .chWidth = WIDTH,
+        .chHeight = HEIGHT,
+    },
+    .Position = {
+        .Set = terminal_set_grid,
+        .Get = terminal_get_grid,
+        .SaveCurrent = terminal_save_current,
+        .Resume = terminal_resume,
+    },
+    .Color = {
+        .Set = terminal_set_brush,
+        .Get = terminal_get_brush,
+    },
+    .Clear = terminal_clear,
+    .Print = NULL,
+};
+
 /*============================ LOCAL VARIABLES ===============================*/
 //! grid brush
 static grid_brush_t s_tCurrentGridBrush;
@@ -36,11 +104,12 @@ static uint8_t s_chExchange[8] = {
     ASCII_ESC, '[',
 };
 
-/*============================ PROTOTYPES ====================================*/
 /*============================ IMPLEMENTATION ================================*/
 
 #define TER_STREAM_RESET_FSM()                  \
-    do{s_tState = TER_STREAM_START;}while(false)
+    do {                                        \
+        s_tState = TER_STREAM_START;            \
+    } while(false)
 
 /*! \brief terminal stream send with external interface TGUI_TERMINAL_WRITE_BYTE()
  *!
@@ -99,7 +168,7 @@ static fsm_rt_t fsm_ter_stream_exchange(uint8_t *pchStream, uint8_t chSize)
  *! \retval fsm_rt_on_going set grid on going
  *! \retval fsm_rt_cpl set grid finish
  */
-fsm_rt_t terminal_set_grid(grid_t tGrid)
+static fsm_rt_t terminal_set_grid(grid_t tGrid)
 {
     static enum {
         TERMINAL_SET_GRID_START = 0,
@@ -132,7 +201,6 @@ fsm_rt_t terminal_set_grid(grid_t tGrid)
     return fsm_rt_on_going;
 }
 
-
 #define TERMINAL_GET_GRID_RESET()           \
     do {                                    \
         s_tState = TERMINAL_GET_GRID_START; \
@@ -143,7 +211,7 @@ fsm_rt_t terminal_set_grid(grid_t tGrid)
  *! \retval fsm_rt_on_going set grid finish
  *! \retval fsm_rt_cpl set grid on going
  */
-fsm_rt_t terminal_get_grid(grid_t *ptGrid)
+static fsm_rt_t terminal_get_grid(grid_t *ptGrid)
 {
     static enum {
         TERMINAL_GET_GRID_START = 0,
@@ -233,7 +301,7 @@ fsm_rt_t terminal_get_grid(grid_t *ptGrid)
  *! \retval fsm_rt_on_going save grid on going
  *! \retval fsm_rt_cpl save grid on finish
  */
-fsm_rt_t terminal_save_current(void)
+static fsm_rt_t terminal_save_current(void)
 {
     static enum {
         TERMINAL_SAVE_CURRENT_START = 0,
@@ -268,7 +336,7 @@ fsm_rt_t terminal_save_current(void)
  *! \retval fsm_rt_on_going set grid on going
  *! \retval fsm_rt_cpl resume grid complete
  */
-fsm_rt_t terminal_resume(void)
+static fsm_rt_t terminal_resume(void)
 {
     static enum {
         TERMINAL_RESUME_START = 0,
@@ -301,7 +369,7 @@ fsm_rt_t terminal_resume(void)
  *! \retval fsm_rt_on_going set brush on going
  *! \retval fsm_rt_cpl set brush finish
  */
-fsm_rt_t terminal_set_brush(grid_brush_t tBrush)
+static fsm_rt_t terminal_set_brush(grid_brush_t tBrush)
 {
 	static enum {
 		TERMINAL_SET_BRUSH_START = 0,
@@ -337,7 +405,7 @@ fsm_rt_t terminal_set_brush(grid_brush_t tBrush)
  *! \param none
  *! \return display attribute
  */
-grid_brush_t terminal_get_brush(void)
+static grid_brush_t terminal_get_brush(void)
 {
 	return s_tCurrentGridBrush;
 }
@@ -347,7 +415,7 @@ grid_brush_t terminal_get_brush(void)
  *! \retval fsm_rt_on_going terminal clear on going
  *! \retval fsm_rt_cpl terminal clear finish
  */
-fsm_rt_t terminal_clear(void)
+static fsm_rt_t terminal_clear(void)
 {
 	if ( TGUI_TERMINAL_WRITE_BYTE(TGUI_TERMINAL_CLEAR_CODE) ) {
 		return fsm_rt_cpl;

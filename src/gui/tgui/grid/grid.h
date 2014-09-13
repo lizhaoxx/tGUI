@@ -25,6 +25,7 @@
 
 #if USE_SERVICE_GUI_TGUI == ENABLED
 #include ".\interface.h"
+#include ".\terminal\terminal.h"
 
 /*============================ MACROS ========================================*/
 /*============================ MACROFIED FUNCTIONS ===========================*/
