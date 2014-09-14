@@ -115,7 +115,7 @@ const i_gdc_t terminal = {
 static grid_brush_t s_tCurrentGridBrush;
 
 //! terminal exchange buffer
-static uint8_t s_chExchange[8] = {
+static uint8_t s_chSend[8] = {
     ASCII_ESC, '[',
 };
 
@@ -212,19 +212,19 @@ static fsm_rt_t terminal_set_grid(grid_t tGrid)
                 uint8_t chRow = HEIGHT - tGrid.chTop;
                 uint8_t chColumn = tGrid.chLeft;
 
-                s_chExchange[2] = ( chRow / 10 ) + '0';
-                s_chExchange[3] = ( chRow % 10 ) + '0';
-                s_chExchange[4] = ';';
-                s_chExchange[5] = ( chColumn / 10 ) + '0';
-                s_chExchange[6] = ( chColumn % 10 ) + '1';
-                s_chExchange[7] = 'H';
+                s_chSend[2] = ( chRow / 10 ) + '0';
+                s_chSend[3] = ( chRow % 10 ) + '0';
+                s_chSend[4] = ';';
+                s_chSend[5] = ( chColumn / 10 ) + '0';
+                s_chSend[6] = ( chColumn % 10 ) + '1';
+                s_chSend[7] = 'H';
             } while (false);
 
             s_tState = TERMINAL_SET_GRID_SEND;
             // break;
 
         case TERMINAL_SET_GRID_SEND:
-            if (fsm_rt_cpl == fsm_ter_stream_exchange(s_chExchange, 8)) {
+            if (fsm_rt_cpl == fsm_ter_stream_exchange(s_chSend, 8)) {
                 SAFE_ATOM_CODE(
                     //! set idle state
                     s_tCurrentStatus = TER_READY_IDLE;
@@ -272,22 +272,22 @@ static fsm_rt_t terminal_set_grid(grid_t tGrid)
                 s_chIndex = 2;
 
                 if (0 != chRow / 10) {
-                    s_chExchange[s_chIndex++] = chRow / 10 + '0';
+                    s_chSend[s_chIndex++] = chRow / 10 + '0';
                 }
-                s_chExchange[s_chIndex++] = chRow % 10 + '0';
-                s_chExchange[s_chIndex++] = ';';
+                s_chSend[s_chIndex++] = chRow % 10 + '0';
+                s_chSend[s_chIndex++] = ';';
                 if (0 != chColumn / 10) {
-                    s_chExchange[s_chIndex++] = chColumn / 10 + '0';
+                    s_chSend[s_chIndex++] = chColumn / 10 + '0';
                 }
-                s_chExchange[s_chIndex++] = ( chColumn % 10 ) + '1';
-                s_chExchange[s_chIndex++] = 'H';
+                s_chSend[s_chIndex++] = ( chColumn % 10 ) + '1';
+                s_chSend[s_chIndex++] = 'H';
             } while (false);
 
             s_tState = TERMINAL_SET_GRID_SEND;
             // break;
 
         case TERMINAL_SET_GRID_SEND:
-            if (fsm_rt_cpl == fsm_ter_stream_exchange(s_chExchange, s_chIndex)) {
+            if (fsm_rt_cpl == fsm_ter_stream_exchange(s_chSend, s_chIndex)) {
                 SAFE_ATOM_CODE(
                     //! set idle state
                     s_tCurrentStatus = TER_READY_IDLE;
@@ -341,13 +341,13 @@ static fsm_rt_t terminal_get_grid(grid_t *ptGrid)
                 s_tCurrentStatus = TER_READY_BUSY;
             )
 
-            s_chExchange[2] = '6';
-            s_chExchange[3] = 'n';
+            s_chSend[2] = '6';
+            s_chSend[3] = 'n';
             s_tState = TERMINAL_GET_GRID_SEND;
             // break;
 
         case TERMINAL_GET_GRID_SEND:
-            if (fsm_rt_cpl == fsm_ter_stream_exchange(s_chExchange, 4)) {
+            if (fsm_rt_cpl == fsm_ter_stream_exchange(s_chSend, 4)) {
                 s_chReceiveCnt = 0;
                 s_tState = TERMINAL_GET_GRID_RECEIVE;
             }
@@ -452,12 +452,12 @@ static fsm_rt_t terminal_save_current(void)
                 //! set current state
                 s_tCurrentStatus = TER_READY_BUSY;
             )
-            s_chExchange[2] = 's';
+            s_chSend[2] = 's';
             s_tState = TERMINAL_SAVE_CURRENT_SEND;
             // break;
 
         case TERMINAL_SAVE_CURRENT_SEND:
-            if (fsm_rt_cpl == fsm_ter_stream_exchange(s_chExchange, 3)) {
+            if (fsm_rt_cpl == fsm_ter_stream_exchange(s_chSend, 3)) {
                 SAFE_ATOM_CODE(
                     //! set idle state
                     s_tCurrentStatus = TER_READY_IDLE;
@@ -500,12 +500,12 @@ static fsm_rt_t terminal_resume(void)
                 //! set current state
                 s_tCurrentStatus = TER_READY_BUSY;
             )
-            s_chExchange[2] = 'u';
+            s_chSend[2] = 'u';
             s_tState = TERMINAL_RESUME_SEND;
             break;
 
         case TERMINAL_RESUME_SEND:
-            if (fsm_rt_cpl == fsm_ter_stream_exchange(s_chExchange, 3)) {
+            if (fsm_rt_cpl == fsm_ter_stream_exchange(s_chSend, 3)) {
                 SAFE_ATOM_CODE(
                     //! set idle state
                     s_tCurrentStatus = TER_READY_IDLE;
@@ -550,17 +550,17 @@ static fsm_rt_t terminal_set_brush(grid_brush_t tBrush)
                 s_tCurrentStatus = TER_READY_BUSY;
             )
 			s_tCurrentGridBrush = tBrush;
-			s_chExchange[2] = '3';
-			s_chExchange[3] = tBrush.tForeground.tValue + '0';
-			s_chExchange[4] = ';';
-			s_chExchange[5] = '4';
-			s_chExchange[6] = tBrush.tBackground.tValue + '0';
-			s_chExchange[7] = 'm';
+			s_chSend[2] = '3';
+			s_chSend[3] = tBrush.tForeground.tValue + '0';
+			s_chSend[4] = ';';
+			s_chSend[5] = '4';
+			s_chSend[6] = tBrush.tBackground.tValue + '0';
+			s_chSend[7] = 'm';
             s_tState = TERMINAL_SET_BRUSH_SEND;
 			//break;
 
 		case TERMINAL_SET_BRUSH_SEND:
-			if (fsm_rt_cpl == fsm_ter_stream_exchange(s_chExchange, 8)) {
+			if (fsm_rt_cpl == fsm_ter_stream_exchange(s_chSend, 8)) {
                 SAFE_ATOM_CODE(
                     //! set idle state
                     s_tCurrentStatus = TER_READY_IDLE;
