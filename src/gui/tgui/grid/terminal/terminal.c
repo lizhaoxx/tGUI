@@ -448,7 +448,6 @@ static fsm_rt_t terminal_set_brush(grid_brush_t tBrush)
 
 	switch ( s_tState ) {
 		case TERMINAL_SET_BRUSH_START:
-			s_tCurrentGridBrush = tBrush;
 			if ( ( tBrush.tForeground.tValue > 7 ) || ( tBrush.tBackground.tValue > 7 ) ) {
 				return fsm_rt_err;
 			}
@@ -461,13 +460,15 @@ static fsm_rt_t terminal_set_brush(grid_brush_t tBrush)
                 //! set current state
                 s_tCurrentStatus = TER_READY_BUSY;
             )
+			s_tCurrentGridBrush = tBrush;
 			s_chExchange[2] = '3';
 			s_chExchange[3] = tBrush.tForeground.tValue + '0';
 			s_chExchange[4] = ';';
 			s_chExchange[5] = '4';
 			s_chExchange[6] = tBrush.tBackground.tValue + '0';
 			s_chExchange[7] = 'm';
-			break;
+            s_tState = TERMINAL_SET_BRUSH_SEND;
+			//break;
 
 		case TERMINAL_SET_BRUSH_SEND:
 			if (fsm_rt_cpl == fsm_ter_stream_exchange(s_chExchange, 8)) {
