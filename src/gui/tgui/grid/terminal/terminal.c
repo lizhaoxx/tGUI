@@ -181,6 +181,8 @@ static fsm_rt_t fsm_ter_stream_exchange(uint8_t *pchStream, uint8_t chSize)
         s_tState = TERMINAL_SET_GRID_START; \
     } while(0)
 
+#if 0
+
 /*! \brief set current cursor position
  *! \param tGrid cursor position
  *! \retval fsm_rt_on_going set grid on going
@@ -198,12 +200,12 @@ static fsm_rt_t terminal_set_grid(grid_t tGrid)
 
             SAFE_ATOM_CODE(
                 //! whether system is initialized
-                if (TER_READY_BUSY == s_tStatus) {
+                if (TER_READY_BUSY == s_tCurrentStatus) {
                     EXIT_SAFE_ATOM_CODE();
                     return fsm_rt_on_going;
                 }
                 //! set current state
-                s_tStatus = TER_READY_BUSY;
+                s_tCurrentStatus = TER_READY_BUSY;
             )
 
             do {
@@ -225,7 +227,7 @@ static fsm_rt_t terminal_set_grid(grid_t tGrid)
             if (fsm_rt_cpl == fsm_ter_stream_exchange(s_chExchange, 8)) {
                 SAFE_ATOM_CODE(
                     //! set idle state
-                    s_tStatus = TER_READY_IDLE;
+                    s_tCurrentStatus = TER_READY_IDLE;
                 )
                 TERMINAL_SET_GRID_RESET();
                 return fsm_rt_cpl;
@@ -235,6 +237,71 @@ static fsm_rt_t terminal_set_grid(grid_t tGrid)
     
     return fsm_rt_on_going;
 }
+
+#else
+
+/*! \brief set current cursor position
+ *! \param tGrid cursor position
+ *! \retval fsm_rt_on_going set grid on going
+ *! \retval fsm_rt_cpl set grid finish
+ */
+static fsm_rt_t terminal_set_grid(grid_t tGrid)
+{
+    static enum {
+        TERMINAL_SET_GRID_START = 0,
+        TERMINAL_SET_GRID_SEND
+    } s_tState = TERMINAL_SET_GRID_START;
+    static uint8_t s_chIndex = 2;
+
+    switch ( s_tState ) {
+        case TERMINAL_SET_GRID_START:
+
+            SAFE_ATOM_CODE(
+                //! whether system is initialized
+                if (TER_READY_BUSY == s_tCurrentStatus) {
+                    EXIT_SAFE_ATOM_CODE();
+                    return fsm_rt_on_going;
+                }
+                //! set current state
+                s_tCurrentStatus = TER_READY_BUSY;
+            )
+
+            do {
+                uint8_t chRow = HEIGHT - tGrid.chTop;
+                uint8_t chColumn = tGrid.chLeft;
+                s_chIndex = 2;
+
+                if (0 != chRow / 10) {
+                    s_chExchange[s_chIndex++] = chRow / 10 + '0';
+                }
+                s_chExchange[s_chIndex++] = chRow % 10 + '0';
+                s_chExchange[s_chIndex++] = ';';
+                if (0 != chColumn / 10) {
+                    s_chExchange[s_chIndex++] = chColumn / 10 + '0';
+                }
+                s_chExchange[s_chIndex++] = ( chColumn % 10 ) + '1';
+                s_chExchange[s_chIndex++] = 'H';
+            } while (false);
+
+            s_tState = TERMINAL_SET_GRID_SEND;
+            // break;
+
+        case TERMINAL_SET_GRID_SEND:
+            if (fsm_rt_cpl == fsm_ter_stream_exchange(s_chExchange, s_chIndex)) {
+                SAFE_ATOM_CODE(
+                    //! set idle state
+                    s_tCurrentStatus = TER_READY_IDLE;
+                )
+                TERMINAL_SET_GRID_RESET();
+                return fsm_rt_cpl;
+            }
+            break;
+    }
+
+    return fsm_rt_on_going;
+}
+
+#endif
 
 #define TERMINAL_GET_GRID_RESET()           \
     do {                                    \
