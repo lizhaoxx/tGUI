@@ -287,50 +287,72 @@ static fsm_rt_t terminal_get_grid(grid_t *ptGrid)
             break;
 
         case TERMINAL_GET_GRID_RECEIVE: {
-            uint8_t chTemp;
-            if ( TGUI_TERMINAL_READ_BYTE(&chTemp) ) {
-                s_chReceiveCode[s_chReceiveCnt] = chTemp;
-                s_chReceiveCnt++;
-                if ( s_chReceiveCnt > 8 ) {
-                    return fsm_rt_err;
-                }
-                if ( 'R' == chTemp ) {
-                    s_tState = TERMINAL_GET_GRID_CHECK;
+                uint8_t chTemp;
+                if ( TGUI_TERMINAL_READ_BYTE(&chTemp) ) {
+                    s_chReceiveCode[s_chReceiveCnt] = chTemp;
+                    s_chReceiveCnt++;
+                    if ( s_chReceiveCnt > 8 ) {
+                        SAFE_ATOM_CODE(
+                            //! set idle state
+                            s_tCurrentStatus = TER_READY_IDLE;
+                        )
+                        return fsm_rt_err;
+                    }
+                    if ( 'R' == chTemp ) {
+                        s_tState = TERMINAL_GET_GRID_CHECK;
+                    }
                 }
             }
             break;
 
-        case TERMINAL_GET_GRID_CHECK:
-            if ( ';' == s_chReceiveCode[3] ) {
-                s_chRow = s_chReceiveCode[2] - '0';
-                if ( 'R' == s_chReceiveCode[5] ) {
-                    s_chColumn = s_chReceiveCode[4] - '0';
-                } else if ( 'R' == s_chReceiveCode[6] ) {
-                    s_chColumn = ( s_chReceiveCode[4] - '0' ) * 10;
-                    s_chColumn += ( s_chReceiveCode[5] - '0' );
+        case TERMINAL_GET_GRID_CHECK: {
+                int_fast8_t chRow;
+                int_fast8_t chColumn;
+
+                if ( ';' == s_chReceiveCode[3] ) {
+                    chRow = HEIGHT - (s_chReceiveCode[2] - '0');
+                    if ( 'R' == s_chReceiveCode[5] ) {
+                        chColumn = s_chReceiveCode[4] - '1';
+                    } else if ( 'R' == s_chReceiveCode[6] ) {
+                        chColumn = ( s_chReceiveCode[4] - '0' ) * 10;
+                        chColumn += ( s_chReceiveCode[5] - '1' );
+                    } else {
+                        SAFE_ATOM_CODE(
+                            //! set idle state
+                            s_tCurrentStatus = TER_READY_IDLE;
+                        )
+                        return fsm_rt_err;
+                    }
+                } else if ( ';' == s_chReceiveCode[4] ) {
+                    chRow = ( s_chReceiveCode[2] - '0' ) * 10;
+                    chRow += ( s_chReceiveCode[3] - '0' );
+                    chRow = HEIGHT - chRow;
+                    if ( 'R' == s_chReceiveCode[6] ) {
+                        chColumn = s_chReceiveCode[5] - '1';
+                    } else if ( 'R' == s_chReceiveCode[7] ) {
+                        chColumn = ( s_chReceiveCode[5] - '0' ) * 10;
+                        chColumn += ( s_chReceiveCode[6] - '1' );
+                    } else {
+                        SAFE_ATOM_CODE(
+                            //! set idle state
+                            s_tCurrentStatus = TER_READY_IDLE;
+                        )
+                        return fsm_rt_err;
+                    }
                 } else {
                     return fsm_rt_err;
                 }
-            } else if ( ';' == s_chReceiveCode[4] ) {
-                s_chRow = ( s_chReceiveCode[2] - '0' ) * 10;
-                s_chRow += ( s_chReceiveCode[3] - '0' );
-                if ( 'R' == s_chReceiveCode[6] ) {
-                    s_chColumn = s_chReceiveCode[5] - '0';
-                } else if ( 'R' == s_chReceiveCode[7] ) {
-                    s_chColumn = ( s_chReceiveCode[5] - '0' ) * 10;
-                    s_chColumn += ( s_chReceiveCode[6] - '0' );
-                } else {
-                    return fsm_rt_err;
-                }
-            } else {
-                return fsm_rt_err;
+                ptGrid->chTop = chRow;
+                ptGrid->chLeft = chColumn;
+
+                SAFE_ATOM_CODE(
+                    //! set idle state
+                    s_tCurrentStatus = TER_READY_IDLE;
+                )
+                TERMINAL_GET_GRID_RESET();
+                return fsm_rt_cpl;
+                // break;
             }
-            ptGrid->chTop = HEIGHT - s_chRow;
-            ptGrid->chLeft = WIDTH - s_chColumn;
-            TERMINAL_GET_GRID_RESET();
-            return fsm_rt_cpl;
-            // break;
-        }
     }
     
     return fsm_rt_on_going;
