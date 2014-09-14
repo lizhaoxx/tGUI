@@ -548,8 +548,9 @@ static fsm_rt_t terminal_set_brush(grid_brush_t tBrush)
                 }
                 //! set current state
                 s_tCurrentStatus = TER_READY_BUSY;
+
+                s_tCurrentGridBrush = tBrush;
             )
-			s_tCurrentGridBrush = tBrush;
 			s_chSend[2] = '3';
 			s_chSend[3] = tBrush.tForeground.tValue + '0';
 			s_chSend[4] = ';';
@@ -580,7 +581,13 @@ static fsm_rt_t terminal_set_brush(grid_brush_t tBrush)
  */
 static grid_brush_t terminal_get_brush(void)
 {
-	return s_tCurrentGridBrush;
+    grid_brush_t tBrush;
+
+    SAFE_ATOM_CODE(
+        tBrush = s_tCurrentGridBrush;
+    )
+
+	return tBrush;
 }
 
 /*! \brief terminal clear
